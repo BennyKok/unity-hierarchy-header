@@ -110,7 +110,7 @@ namespace BK.HierarchyHeader.Editor
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Options"))
             {
-                SettingsService.OpenProjectSettings("Project/BK/Runtime Debug Action");
+                SettingsService.OpenProjectSettings("Project/BK/Hierarchy Header");
             }
             if (GUILayout.Button("Refresh"))
             {
