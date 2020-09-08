@@ -94,7 +94,7 @@ namespace BK.HierarchyHeader.Editor
 
             var leftSize = 0;
             var rightSize = 0;
-            switch (header.alignment)
+            switch (HeaderSettings.Instance.alignment)
             {
                 case HeaderAlignment.Start:
                     leftSize = HeaderSettings.Instance.minPrefixLength;
@@ -118,7 +118,7 @@ namespace BK.HierarchyHeader.Editor
 
         public static string GetFormattedTitle(Header header)
         {
-            switch (header.type)
+            switch (HeaderSettings.Instance.type)
             {
                 case HeaderType.Dotted:
                     return GetSimpleTitle('-', header);

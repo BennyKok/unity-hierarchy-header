@@ -59,7 +59,12 @@ namespace BK.HierarchyHeader.Editor
                 label = "Hierarchy Header",
                 activateHandler = (_, element) =>
                 {
+                    Undo.undoRedoPerformed += HeaderUtils.UpdateAllHeader;
                     settings = HeaderSettings.GetSerializedSettings();
+                },
+                deactivateHandler = () =>
+                {
+                    Undo.undoRedoPerformed -= HeaderUtils.UpdateAllHeader;
                 },
                 guiHandler = (searchContext) =>
                 {
