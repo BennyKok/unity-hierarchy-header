@@ -71,17 +71,15 @@ namespace BK.HierarchyHeader.Editor
 
         public static void UpdateAllHeader()
         {
-            var targetType = HeaderSettings.GetOrCreateSettings().type;
+            var targetType = HeaderSettings.Instance.type;
+            var targetAlignment = HeaderSettings.Instance.alignment;
             var allHeader = GameObject.FindObjectsOfType<Header>();
             foreach (var header in allHeader)
             {
-                if (header.type != targetType)
-                {
-                    header.type = targetType;
-                    header.UpdateHeader();
+                header.type = targetType;
+                header.alignment = targetAlignment;
 
-                    EditorUtility.SetDirty(header);
-                }
+                HeaderEditor.UpdateHeader(header);
             }
         }
     }
@@ -89,21 +87,84 @@ namespace BK.HierarchyHeader.Editor
     [CustomEditor(typeof(Header))]
     public class HeaderEditor : UnityEditor.Editor
     {
+        public static string GetSimpleTitle(char prefix, Header header)
+        {
+            var maxCharLength = HeaderSettings.Instance.maxLength;
+            var charLength = maxCharLength - header.title.Length;
+
+            var leftSize = 0;
+            var rightSize = 0;
+            switch (header.alignment)
+            {
+                case HeaderAlignment.Start:
+                    leftSize = HeaderSettings.Instance.minPrefixLength;
+                    rightSize = charLength - leftSize;
+                    break;
+                case HeaderAlignment.End:
+                    rightSize = HeaderSettings.Instance.minPrefixLength;
+                    leftSize = charLength - rightSize;
+                    break;
+                case HeaderAlignment.Center:
+                    leftSize = charLength / 2;
+                    rightSize = charLength / 2;
+                    break;
+            }
+
+            string left = leftSize > 0 ? new string(prefix, leftSize) : "";
+            string right = rightSize > 0 ? new string(prefix, rightSize) : "";
+
+            return left + " " + header.title.ToUpper() + " " + right;
+        }
+
+        public static string GetFormattedTitle(Header header)
+        {
+            switch (header.type)
+            {
+                case HeaderType.Dotted:
+                    return GetSimpleTitle('-', header);
+            }
+            return GetSimpleTitle('━', header);
+        }
+
+        public static void UpdateHeader(Header header)
+        {
+            header.name = GetFormattedTitle(header);
+            EditorUtility.SetDirty(header);
+        }
+
+        private void OnEnable() => Undo.undoRedoPerformed += OnUndoRedo;
+
+        private void OnDisable() => Undo.undoRedoPerformed -= OnUndoRedo;
+
+        public void OnUndoRedo()
+        {
+            UpdateHeader(target as Header);
+        }
+
         public override void OnInspectorGUI()
         {
             var settings = HeaderSettings.GetOrCreateSettings();
             var typeProperty = serializedObject.FindProperty("type");
 
+            var header = target as Header;
+
             serializedObject.Update();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("title"));
+
+            var titleProperty = serializedObject.FindProperty("title");
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(titleProperty);
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+                UpdateHeader(header);
+            }
 
             //Sync current header with settings
             if ((HeaderType)typeProperty.enumValueIndex != settings.type)
             {
                 typeProperty.enumValueIndex = (int)settings.type;
 
-                (target as Header).UpdateHeader();
-                EditorUtility.SetDirty(target);
+                UpdateHeader(header);
             }
 
             EditorGUILayout.Space();
@@ -114,6 +175,7 @@ namespace BK.HierarchyHeader.Editor
             }
             if (GUILayout.Button("Refresh"))
             {
+                UpdateHeader(header);
                 HeaderUtils.UpdateAllHeader();
             }
             if (GUILayout.Button("Create Empty"))
@@ -124,16 +186,6 @@ namespace BK.HierarchyHeader.Editor
             }
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
-
-            // EditorGUI.BeginChangeCheck();
-            // EditorGUILayout.PropertyField(typeProperty);
-            // if (EditorGUI.EndChangeCheck())
-            // {
-            //     settings.type = (HeaderType)typeProperty.enumValueIndex;
-            //     EditorUtility.SetDirty(settings);
-
-            //     HeaderUtils.UpdateAllHeader();
-            // }
 
             serializedObject.ApplyModifiedProperties();
         }

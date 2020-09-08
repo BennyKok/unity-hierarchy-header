@@ -7,38 +7,22 @@ namespace BK.HierarchyHeader
         Default, Dotted
     }
 
+    public enum HeaderAlignment
+    {
+        Start, Center, End
+    }
+
     public class Header : MonoBehaviour
     {
         public string title = "Header";
 
-        [HideInInspector]
-        public HeaderType type;
-
-        private void OnValidate()
-        {
-            UpdateHeader();
-        }
-
-        public void UpdateHeader()
-        {
-            //Update our header title
-            var header = GetHeader();
-            gameObject.name = header + " " + title.ToUpper() + " " + header;
-        }
+        [HideInInspector] public HeaderType type;
+        [HideInInspector] public HeaderAlignment alignment;
 
         private void OnDrawGizmos()
         {
             //locking the postion
             transform.position = Vector3.zero;
-        }
-
-        private string GetHeader()
-        {
-            switch (type)
-            {
-                case HeaderType.Dotted: return "------------";
-            }
-            return "━━━━━━━━";
         }
     }
 }

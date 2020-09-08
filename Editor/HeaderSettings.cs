@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -6,9 +7,18 @@ namespace BK.HierarchyHeader.Editor
 {
     public class HeaderSettings : ScriptableObject
     {
+        [Range(10, 60)]
+        public int maxLength = 30;
+
+        [Range(0, 10)]
+        public int minPrefixLength = 2;
+
         public HeaderType type;
+        public HeaderAlignment alignment;
 
         private static HeaderSettings current;
+
+        public static HeaderSettings Instance { get => GetOrCreateSettings(); }
 
         public static HeaderSettings GetOrCreateSettings()
         {
@@ -24,6 +34,7 @@ namespace BK.HierarchyHeader.Editor
                 var path = EditorUtility.SaveFilePanelInProject("Save HeaderSettings as...", "HierarchyHeaderSettings", "asset", "");
                 current = ScriptableObject.CreateInstance<HeaderSettings>();
                 current.type = HeaderType.Default;
+                current.alignment = HeaderAlignment.Center;
                 AssetDatabase.CreateAsset(current, path);
                 AssetDatabase.SaveAssets();
             }
@@ -60,7 +71,17 @@ namespace BK.HierarchyHeader.Editor
                     GUILayout.Space(12);
 
                     EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(settings.FindProperty("type"), new GUIContent("Default Type"));
+
+                    EditorGUILayout.BeginVertical();
+                    EditorGUILayout.PropertyField(settings.FindProperty("maxLength"));
+                    EditorGUILayout.PropertyField(settings.FindProperty("type"));
+                    EditorGUILayout.PropertyField(settings.FindProperty("alignment"));
+                    var alignment = settings.FindProperty("alignment");
+                    if (alignment.enumValueIndex == 0 || alignment.enumValueIndex == 2)
+                    {
+                        EditorGUILayout.PropertyField(settings.FindProperty("minPrefixLength"));
+                    }
+                    EditorGUILayout.EndVertical();
 
                     GUILayout.Space(12);
                     EditorGUILayout.EndHorizontal();
@@ -80,14 +101,4 @@ namespace BK.HierarchyHeader.Editor
             return provider;
         }
     }
-
-    // [CustomEditor(typeof(HeaderSettings))]
-    // public class HeaderSettingsEditor : UnityEditor.Editor
-    // {
-    //     public override void OnInspectorGUI()
-    //     {
-    //         EditorGUILayout.HelpBox("Edit in settings.", MessageType.Info);
-    //     }
-    // }
-
 }
