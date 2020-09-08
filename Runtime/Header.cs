@@ -4,7 +4,7 @@ namespace BK.HierarchyHeader
 {
     public enum HeaderType
     {
-        Default, Dotted
+        Default, Dotted, Custom
     }
 
     public enum HeaderAlignment

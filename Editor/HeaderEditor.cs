@@ -122,6 +122,8 @@ namespace BK.HierarchyHeader.Editor
             {
                 case HeaderType.Dotted:
                     return GetSimpleTitle('-', header);
+                case HeaderType.Custom:
+                    return GetSimpleTitle(HeaderSettings.Instance.customPrefix, header);
             }
             return GetSimpleTitle('━', header);
         }

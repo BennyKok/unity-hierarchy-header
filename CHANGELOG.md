@@ -8,8 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Add more styling options, alignment, length etc.
 
+Added
+
 - HeaderAlignment option
 - maxLength option
+- custom character option
 
 ## [1.0.0] - 2020-08-30
 

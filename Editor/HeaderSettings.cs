@@ -14,6 +14,7 @@ namespace BK.HierarchyHeader.Editor
         public int minPrefixLength = 2;
 
         public HeaderType type;
+        public char customPrefix;
         public HeaderAlignment alignment;
 
         private static HeaderSettings current;
@@ -79,7 +80,16 @@ namespace BK.HierarchyHeader.Editor
 
                     EditorGUILayout.BeginVertical();
                     EditorGUILayout.PropertyField(settings.FindProperty("maxLength"));
-                    EditorGUILayout.PropertyField(settings.FindProperty("type"));
+
+                    var type = settings.FindProperty("type");
+                    EditorGUILayout.PropertyField(type);
+
+                    if (type.enumValueIndex == 2)
+                    {
+                        var customPrefix = settings.FindProperty("customPrefix");
+                        EditorGUILayout.PropertyField(customPrefix);
+                    }
+
                     EditorGUILayout.PropertyField(settings.FindProperty("alignment"));
                     var alignment = settings.FindProperty("alignment");
                     if (alignment.enumValueIndex == 0 || alignment.enumValueIndex == 2)
