@@ -60,12 +60,12 @@ namespace BK.HierarchyHeader.Editor
                 label = "Hierarchy Header",
                 activateHandler = (_, element) =>
                 {
-                    Undo.undoRedoPerformed += HeaderUtils.UpdateAllHeader;
+                    Undo.undoRedoPerformed += HeaderEditor.UpdateAllHeader;
                     settings = HeaderSettings.GetSerializedSettings();
                 },
                 deactivateHandler = () =>
                 {
-                    Undo.undoRedoPerformed -= HeaderUtils.UpdateAllHeader;
+                    Undo.undoRedoPerformed -= HeaderEditor.UpdateAllHeader;
                 },
                 guiHandler = (searchContext) =>
                 {
@@ -105,7 +105,7 @@ namespace BK.HierarchyHeader.Editor
 
                     if (EditorGUI.EndChangeCheck())
                     {
-                        HeaderUtils.UpdateAllHeader();
+                        HeaderEditor.UpdateAllHeader();
                     }
                 },
 

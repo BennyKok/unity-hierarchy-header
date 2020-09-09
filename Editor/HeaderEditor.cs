@@ -1,74 +1,12 @@
-﻿using UnityEditor;
+﻿using System.Text;
+using UnityEditor;
 using UnityEngine;
 
 namespace BK.HierarchyHeader.Editor
 {
-    public static class HeaderUtils
+    [CustomEditor(typeof(Header))]
+    public class HeaderEditor : UnityEditor.Editor
     {
-        [MenuItem("GameObject/Group Selected %g")]
-        private static void GroupSelected()
-        {
-            if (!Selection.activeTransform) return;
-            var go = new GameObject(Selection.activeTransform.name + " Group");
-            go.transform.SetSiblingIndex(Selection.activeTransform.GetSiblingIndex());
-
-            go.transform.position = FindCenterPoint(Selection.transforms);
-
-            go.transform.SetParent(Selection.activeTransform.parent);
-
-            Undo.RegisterCreatedObjectUndo(go, "Group Selected");
-
-            foreach (var transform in Selection.transforms)
-            {
-                Undo.SetTransformParent(transform, go.transform, "Group Selected");
-            }
-
-            Selection.activeGameObject = go;
-        }
-
-        private static Vector3 FindCenterPoint(Transform[] objects)
-        {
-            if (objects.Length == 0)
-                return Vector3.zero;
-
-            if (objects.Length == 1)
-            {
-                if (objects[0].TryGetComponent<Renderer>(out var ren))
-                    return ren.bounds.center;
-                else
-                    return objects[0].transform.position;
-            }
-
-            var bounds = new Bounds(objects[0].transform.position, Vector3.zero);
-            foreach (var transform in objects)
-            {
-                if (transform.TryGetComponent<Renderer>(out var ren) && ren.GetType() != typeof(ParticleSystemRenderer))
-                    bounds.Encapsulate(ren.bounds);
-                else
-                    bounds.Encapsulate(transform.position);
-            }
-            return bounds.center;
-        }
-
-        [MenuItem("GameObject/Create Header", false, 0)]
-        private static void CreateHeader()
-        {
-            var header = new GameObject();
-
-            //Mark as EditorOnly, so it will not included in final build
-            header.tag = "EditorOnly";
-            header.AddComponent<Header>();
-
-            //Hide the transform
-            header.transform.hideFlags = HideFlags.NotEditable | HideFlags.HideInInspector;
-
-            //Register undo
-            Undo.RegisterCreatedObjectUndo(header, "Create Header");
-
-            //Select the created header
-            Selection.activeGameObject = header;
-        }
-
         public static void UpdateAllHeader()
         {
             var targetType = HeaderSettings.Instance.type;
@@ -79,18 +17,14 @@ namespace BK.HierarchyHeader.Editor
                 header.type = targetType;
                 header.alignment = targetAlignment;
 
-                HeaderEditor.UpdateHeader(header);
+                HeaderEditor.UpdateHeader(header, null, true);
             }
         }
-    }
 
-    [CustomEditor(typeof(Header))]
-    public class HeaderEditor : UnityEditor.Editor
-    {
-        public static string GetSimpleTitle(char prefix, Header header)
+        public static string GetSimpleTitle(char prefix, string title)
         {
             var maxCharLength = HeaderSettings.Instance.maxLength;
-            var charLength = maxCharLength - header.title.Length;
+            var charLength = maxCharLength - title.Length;
 
             var leftSize = 0;
             var rightSize = 0;
@@ -113,35 +47,47 @@ namespace BK.HierarchyHeader.Editor
             string left = leftSize > 0 ? new string(prefix, leftSize) : "";
             string right = rightSize > 0 ? new string(prefix, rightSize) : "";
 
-            return left + " " + header.title.ToUpper() + " " + right;
+            var builder = new StringBuilder();
+            builder.Append(left);
+            builder.Append(" ");
+            builder.Append(title.ToUpper());
+            builder.Append(" ");
+            builder.Append(right);
+
+            return builder.ToString();
         }
 
-        public static string GetFormattedTitle(Header header)
+        public static string GetFormattedTitle(string title)
         {
             switch (HeaderSettings.Instance.type)
             {
                 case HeaderType.Dotted:
-                    return GetSimpleTitle('-', header);
+                    return GetSimpleTitle('-', title);
                 case HeaderType.Custom:
-                    return GetSimpleTitle(HeaderSettings.Instance.customPrefix, header);
+                    return GetSimpleTitle(HeaderSettings.Instance.customPrefix, title);
             }
-            return GetSimpleTitle('━', header);
+            return GetSimpleTitle('━', title);
         }
 
-        public static void UpdateHeader(Header header)
+        public static void UpdateHeader(Header header, string title = null, bool markAsDirty = false)
         {
-            header.name = GetFormattedTitle(header);
-            EditorUtility.SetDirty(header);
+            var targetTitle = title == null ? header.title : title;
+
+            header.name = GetFormattedTitle(targetTitle);
+
+            if (markAsDirty)
+                EditorUtility.SetDirty(header);
         }
 
         private void OnEnable() => Undo.undoRedoPerformed += OnUndoRedo;
 
         private void OnDisable() => Undo.undoRedoPerformed -= OnUndoRedo;
 
-        public void OnUndoRedo()
-        {
-            UpdateHeader(target as Header);
-        }
+        public void OnUndoRedo() => UpdateHeader(target as Header, null, true);
+
+        private bool titleChanged;
+
+        private double lastChangedTime;
 
         public override void OnInspectorGUI()
         {
@@ -157,8 +103,10 @@ namespace BK.HierarchyHeader.Editor
             EditorGUILayout.PropertyField(titleProperty);
             if (EditorGUI.EndChangeCheck())
             {
-                serializedObject.ApplyModifiedProperties();
-                UpdateHeader(header);
+                UpdateHeader(header, titleProperty.stringValue, false);
+
+                //Refresh the hierarchy to reflect the new name
+                EditorApplication.RepaintHierarchyWindow();
             }
 
             //Sync current header with settings
@@ -166,7 +114,7 @@ namespace BK.HierarchyHeader.Editor
             {
                 typeProperty.enumValueIndex = (int)settings.type;
 
-                UpdateHeader(header);
+                UpdateHeader(header, null, false);
             }
 
             EditorGUILayout.Space();
@@ -177,8 +125,7 @@ namespace BK.HierarchyHeader.Editor
             }
             if (GUILayout.Button("Refresh"))
             {
-                UpdateHeader(header);
-                HeaderUtils.UpdateAllHeader();
+                UpdateAllHeader();
             }
             if (GUILayout.Button("Create Empty"))
             {
