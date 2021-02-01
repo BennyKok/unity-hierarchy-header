@@ -1,117 +1,78 @@
-using System;
-using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.SettingsManagement;
 using UnityEngine;
 
 namespace BK.HierarchyHeader.Editor
 {
-    public class HeaderSettings : ScriptableObject
+    public static class HeaderSettings
     {
-        [Range(10, 60)]
-        public int maxLength = 30;
+        [UserSetting] public static UserSetting<int> maxLength = new UserSetting<int>(Instance, "general.maxLength", 30);
+        [UserSetting] public static UserSetting<int> minPrefixLength = new UserSetting<int>(Instance, "general.minPrefixLength", 10);
+        [UserSetting] public static UserSetting<HeaderType> headerType = new UserSetting<HeaderType>(Instance, "general.headerType", HeaderType.Default);
+        [UserSetting] public static UserSetting<string> customPrefix = new UserSetting<string>(Instance, "general.customPrefix", null);
+        [UserSetting] public static UserSetting<HeaderAlignment> alignment = new UserSetting<HeaderAlignment>(Instance, "general.alignment", HeaderAlignment.Center);
 
-        [Range(0, 10)]
-        public int minPrefixLength = 2;
 
-        public HeaderType type;
-        public char customPrefix;
-        public HeaderAlignment alignment;
-
-        private static HeaderSettings current;
-
-        public static HeaderSettings Instance { get => GetOrCreateSettings(); }
-
-        public static HeaderSettings GetOrCreateSettings()
+        [UserSettingBlock("General")]
+        static void CustomSettingsGUI(string searchContext)
         {
-            if (current != null) return current;
-
-            //Locate our header settings
-            var ids = AssetDatabase.FindAssets("t:HeaderSettings");
-            if (ids.Length > 0)
-                current = AssetDatabase.LoadAssetAtPath<HeaderSettings>(AssetDatabase.GUIDToAssetPath(ids[0]));
-
-            if (current == null)
+            using (var scope = new EditorGUI.ChangeCheckScope())
             {
-                var path = EditorUtility.SaveFilePanelInProject("Save HeaderSettings as...", "HierarchyHeaderSettings", "asset", "");
-                current = ScriptableObject.CreateInstance<HeaderSettings>();
-                current.type = HeaderType.Default;
-                current.alignment = HeaderAlignment.Center;
-                AssetDatabase.CreateAsset(current, path);
-                AssetDatabase.SaveAssets();
+                maxLength.value = (int)SettingsGUILayout.SettingsSlider("Max Length", maxLength, 10, 60, searchContext);
+
+                headerType.value = (HeaderType)EditorGUILayout.EnumPopup("Header Type", headerType.value);
+                SettingsGUILayout.DoResetContextMenuForLastRect(headerType);
+
+                if (headerType.value == HeaderType.Custom)
+                {
+                    string v = SettingsGUILayout.SettingsTextField("Custom Prefix", customPrefix, searchContext);
+                    if (v?.Length <= 1)
+                        customPrefix.value = v;
+                }
+
+                alignment.value = (HeaderAlignment)EditorGUILayout.EnumPopup("Header Alignment", alignment.value);
+                SettingsGUILayout.DoResetContextMenuForLastRect(alignment);
+
+                if (alignment.value == HeaderAlignment.Start || alignment.value == HeaderAlignment.End)
+                {
+                    minPrefixLength.value = (int)SettingsGUILayout.SettingsSlider("Min Prefix Length", minPrefixLength, 0, 10, searchContext);
+                }
+
+                if (scope.changed)
+                {
+                    Instance.Save();
+                    HeaderEditor.UpdateAllHeader();
+                }
+
+                EditorGUILayout.Space();
+                if (GUILayout.Button("Update Headers"))
+                {
+                    HeaderEditor.UpdateAllHeader();
+                }
             }
-            return current;
         }
 
-        internal static SerializedObject GetSerializedSettings()
+        internal const string k_PackageName = "com.bennykok.hierarchy-header";
+        internal const string k_PreferencesPath = "Project/BK/Hierarchy Header";
+
+        static Settings s_Instance;
+
+        internal static Settings Instance
         {
-            return new SerializedObject(GetOrCreateSettings());
-        }
-    }
+            get
+            {
+                if (s_Instance == null)
+                    s_Instance = new Settings(k_PackageName);
 
-    static class SettingsRegester
-    {
-        private static SerializedObject settings;
+                return s_Instance;
+            }
+        }
 
         [SettingsProvider]
-        public static SettingsProvider CreateMyCustomSettingsProvider()
+        static SettingsProvider CreateSettingsProvider()
         {
-            var provider = new SettingsProvider("Project/BK/Hierarchy Header", SettingsScope.Project)
-            {
-                label = "Hierarchy Header",
-                activateHandler = (_, element) =>
-                {
-                    Undo.undoRedoPerformed += HeaderEditor.UpdateAllHeader;
-                    settings = HeaderSettings.GetSerializedSettings();
-                },
-                deactivateHandler = () =>
-                {
-                    Undo.undoRedoPerformed -= HeaderEditor.UpdateAllHeader;
-                },
-                guiHandler = (searchContext) =>
-                {
-                    settings.Update();
-
-                    GUILayout.Space(8);
-
-                    EditorGUILayout.BeginHorizontal();
-                    GUILayout.Space(12);
-
-                    EditorGUI.BeginChangeCheck();
-
-                    EditorGUILayout.BeginVertical();
-                    EditorGUILayout.PropertyField(settings.FindProperty("maxLength"));
-
-                    var type = settings.FindProperty("type");
-                    EditorGUILayout.PropertyField(type);
-
-                    if (type.enumValueIndex == 2)
-                    {
-                        var customPrefix = settings.FindProperty("customPrefix");
-                        EditorGUILayout.PropertyField(customPrefix);
-                    }
-
-                    EditorGUILayout.PropertyField(settings.FindProperty("alignment"));
-                    var alignment = settings.FindProperty("alignment");
-                    if (alignment.enumValueIndex == 0 || alignment.enumValueIndex == 2)
-                    {
-                        EditorGUILayout.PropertyField(settings.FindProperty("minPrefixLength"));
-                    }
-                    EditorGUILayout.EndVertical();
-
-                    GUILayout.Space(12);
-                    EditorGUILayout.EndHorizontal();
-
-                    settings.ApplyModifiedProperties();
-
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        HeaderEditor.UpdateAllHeader();
-                    }
-                },
-
-                // Populate the search keywords to enable smart search filtering and label highlighting:
-                keywords = new HashSet<string>(new[] { "Header" })
-            };
+            var provider = new UserSettingsProvider(k_PreferencesPath, Instance,
+                new[] { typeof(HeaderSettings).Assembly }, SettingsScope.Project);
 
             return provider;
         }

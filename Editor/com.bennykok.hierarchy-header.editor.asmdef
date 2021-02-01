@@ -1,7 +1,8 @@
 {
     "name": "com.bennykok.hierarchy-header.editor",
     "references": [
-        "GUID:c6e066e332a5d9748bc1ff41b6174db5"
+        "GUID:c6e066e332a5d9748bc1ff41b6174db5",
+        "GUID:49818357e697641afb75d2f8acaf1861"
     ],
     "includePlatforms": [
         "Editor"

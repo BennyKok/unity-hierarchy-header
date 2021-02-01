@@ -9,8 +9,8 @@ namespace BK.HierarchyHeader.Editor
     {
         public static void UpdateAllHeader()
         {
-            var targetType = HeaderSettings.Instance.type;
-            var targetAlignment = HeaderSettings.Instance.alignment;
+            var targetType = HeaderSettings.headerType;
+            var targetAlignment = HeaderSettings.alignment;
             var allHeader = GameObject.FindObjectsOfType<Header>();
             foreach (var header in allHeader)
             {
@@ -21,21 +21,27 @@ namespace BK.HierarchyHeader.Editor
             }
         }
 
+        public static string GetSimpleTitle(string prefix, string title)
+        {
+            if (prefix == null || prefix.Length <= 0) return title;
+            return GetSimpleTitle(prefix[0], title);
+        }
+
         public static string GetSimpleTitle(char prefix, string title)
         {
-            var maxCharLength = HeaderSettings.Instance.maxLength;
+            var maxCharLength = HeaderSettings.maxLength;
             var charLength = maxCharLength - title.Length;
 
             var leftSize = 0;
             var rightSize = 0;
-            switch (HeaderSettings.Instance.alignment)
+            switch (HeaderSettings.alignment.value)
             {
                 case HeaderAlignment.Start:
-                    leftSize = HeaderSettings.Instance.minPrefixLength;
+                    leftSize = HeaderSettings.minPrefixLength;
                     rightSize = charLength - leftSize;
                     break;
                 case HeaderAlignment.End:
-                    rightSize = HeaderSettings.Instance.minPrefixLength;
+                    rightSize = HeaderSettings.minPrefixLength;
                     leftSize = charLength - rightSize;
                     break;
                 case HeaderAlignment.Center:
@@ -59,12 +65,12 @@ namespace BK.HierarchyHeader.Editor
 
         public static string GetFormattedTitle(string title)
         {
-            switch (HeaderSettings.Instance.type)
+            switch (HeaderSettings.headerType.value)
             {
                 case HeaderType.Dotted:
                     return GetSimpleTitle('-', title);
                 case HeaderType.Custom:
-                    return GetSimpleTitle(HeaderSettings.Instance.customPrefix, title);
+                    return GetSimpleTitle(HeaderSettings.customPrefix, title);
             }
             return GetSimpleTitle('━', title);
         }
@@ -91,7 +97,6 @@ namespace BK.HierarchyHeader.Editor
 
         public override void OnInspectorGUI()
         {
-            var settings = HeaderSettings.GetOrCreateSettings();
             var typeProperty = serializedObject.FindProperty("type");
 
             var header = target as Header;
@@ -110,9 +115,9 @@ namespace BK.HierarchyHeader.Editor
             }
 
             //Sync current header with settings
-            if ((HeaderType)typeProperty.enumValueIndex != settings.type)
+            if ((HeaderType)typeProperty.enumValueIndex != HeaderSettings.headerType.value)
             {
-                typeProperty.enumValueIndex = (int)settings.type;
+                typeProperty.enumValueIndex = (int)HeaderSettings.headerType.value;
 
                 UpdateHeader(header, null, false);
             }

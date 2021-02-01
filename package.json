@@ -2,5 +2,8 @@
   "name": "com.bennykok.hierarchy-header",
   "displayName": "Hierarchy Header",
   "version": "1.0.2",
-  "description": "Text based simple hierarchy header, no fancy magic, just works"
+  "description": "Text based simple hierarchy header, no fancy magic, just works",
+  "dependencies": {
+    "com.unity.settings-manager": "1.0.3"
+  }
 }
