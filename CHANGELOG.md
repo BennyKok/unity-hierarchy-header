@@ -1,8 +1,17 @@
 # Changelog
-All notable changes to this package will be documented in this file.
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [2.0.0](https://github.com/BennyKok/unity-hierarchy-header/compare/v1.0.2...v2.0.0) (2021-02-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* old settings will be lost, please remove the old HeaderSettings scriptableobject
+
+### Features
+
+* using Settings Manager for editor settings ([71cfa9b](https://github.com/BennyKok/unity-hierarchy-header/commit/71cfa9bd321729457f2b4a862e44bf5a5a295a3e))
 
 ## [1.0.2] - 2020-09-08
 
